@@ -14,30 +14,31 @@ export default function Page() {
         <View style={styles.welcomeContainer}>
           <View style={styles.welcomingRow}>
             <Text style={styles.welcomeText}>Welcome to my page!</Text>
-            <View>
-              <FontAwesome
-                name="window-minimize"
-                size={24}
-                color="white"
-                style={styles.windowMinimize}
-              />
-            </View>
-            <View>
-              <FontAwesome
-                name="window-close-o"
-                size={24}
-                color="white"
-                style={styles.windowClose}
-              />
-            </View>
+            <FontAwesome
+              name="window-minimize"
+              size={24}
+              color="white"
+              style={styles.windowMinimize}
+            />
+            <FontAwesome
+              name="window-close-o"
+              size={24}
+              color="white"
+              style={styles.windowClose}
+            />
           </View>
           <View style={styles.pressmeBox}>
             <View style={styles.welcomeView}>
               <Link href="./profile">
-                <AntDesign name="caretright" size={15} color="black" />
-                Press me!!<Text> </Text>
-                <AntDesign name="caretleft" size={15} color="black" />
+                <Text>
+                  <AntDesign name="caretright" size={15} color="black" />
+                  Press me!!
+                  <AntDesign name="caretleft" size={15} color="black" />
+                </Text>
               </Link>
+            </View>
+            <View style={styles.todo}>
+              <Link href="./todo">iR AL TODO</Link>
             </View>
           </View>
         </View>
@@ -85,6 +86,7 @@ const styles = StyleSheet.create({
     padding: 2,
     marginTop: 20,
     width: "45%",
+    alignItems: "center", // Center the content inside
   },
   windowMinimize: {
     marginRight: 9,
@@ -99,5 +101,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 50,
+  },
+  todo: {
+    color: "#fff",
+    marginTop: 10,
+    backgroundColor: "red",
   },
 });
