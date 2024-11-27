@@ -32,13 +32,25 @@ export default function Page() {
               <Link href="./profile">
                 <Text>
                   <AntDesign name="caretright" size={15} color="black" />
-                  Press me!!
+                  Watch my repo!!
                   <AntDesign name="caretleft" size={15} color="black" />
                 </Text>
               </Link>
             </View>
-            <View style={styles.todo}>
-              <Link href="./todo">iR AL TODO</Link>
+            <View style={styles.welcomeView}>
+              <Link href="./todo">
+                <AntDesign name="caretright" size={15} color="black" />
+                iR AL TODO
+                <AntDesign name="caretleft" size={15} color="black" />
+              </Link>
+            </View>
+            <View style={styles.welcomeView}>
+              {" "}
+              <Link href="/store">
+                {" "}
+                <AntDesign name="caretright" size={15} color="black" /> IR A MI
+                TIENDITA <AntDesign name="caretleft" size={15} color="black" />{" "}
+              </Link>{" "}
             </View>
           </View>
         </View>
@@ -84,9 +96,9 @@ const styles = StyleSheet.create({
   welcomeView: {
     backgroundColor: "#FFF",
     padding: 2,
-    marginTop: 20,
-    width: "45%",
-    alignItems: "center", // Center the content inside
+    marginTop: 10,
+    width: "75%",
+    alignItems: "center",
   },
   windowMinimize: {
     marginRight: 9,
