@@ -13,7 +13,6 @@ import { Redirect } from "expo-router";
 export const TodoPage = () => {
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [toDoList, setToDoList] = useState<string[]>([]);
-  //const addNewItem
   return (
     <View style={styles.container}>
       <ScrollView>

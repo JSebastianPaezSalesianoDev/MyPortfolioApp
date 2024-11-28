@@ -5,5 +5,6 @@ export type Product = {
   category: string;
   quantity: number;
   unitPrice: number;
-  image: any;
+  image?: any;
+  inCart: boolean;
 };

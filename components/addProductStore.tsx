@@ -37,6 +37,7 @@ const StoreComponent = (props: StoreComponentProps) => {
       quantity: parseInt(quantity),
       unitPrice: parseFloat(price),
       image: getImageByCategory(category),
+      inCart: false,
     };
 
     props.onAddProduct(newProduct);
