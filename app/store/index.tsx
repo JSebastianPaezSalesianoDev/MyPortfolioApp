@@ -40,6 +40,10 @@ export const TodoPage = () => {
     setIsModalVisible(true);
   };
 
+  const handleClearProducts = () => {
+    setProducts([]);
+  };
+
   const totalPrice = products.reduce(
     (acc, product) =>
       product.inCart ? acc + product.quantity * product.unitPrice : acc,
@@ -102,6 +106,13 @@ export const TodoPage = () => {
         <Text style={styles.totalPrice}>
           Precio total de la cesta: ${totalPrice.toFixed(2)}
         </Text>
+      )}
+      {products.length > 0 && (
+        <Button
+          title="Borrar Todos"
+          onPress={handleClearProducts}
+          color="red"
+        />
       )}
       <Button
         title="Añadir Producto"
