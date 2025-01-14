@@ -1,10 +1,12 @@
-import { Link, Stack } from "expo-router";
-import { Text, StyleSheet, View } from "react-native";
-import Entypo from "@expo/vector-icons/Entypo";
+import { StyleSheet } from "react-native";
+
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "react-native-reanimated";
+import { Drawer } from "expo-router/drawer";
 
 const _layout = () => {
   return (
-    <Stack
+    /*  <Stack
       screenOptions={{
         header: () => (
           <View style={styles.headerContainer}>
@@ -16,8 +18,34 @@ const _layout = () => {
         ),
       }}
     >
-      <Stack.Screen name="./(tabs)" />
-    </Stack>
+      <Stack.Screen name="/profile/(tabs)" />
+    </Stack> */
+
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Drawer>
+        <Drawer.Screen
+          name="index"
+          options={{
+            drawerLabel: "Home",
+            title: "Bienvenido",
+          }}
+        />
+        <Drawer.Screen
+          name="profile"
+          options={{
+            drawerLabel: "Portfolio",
+            title: "Portfolio",
+          }}
+        />
+        <Drawer.Screen
+          name="store/index"
+          options={{
+            drawerLabel: "Mi compra",
+            title: "Mi compra",
+          }}
+        />
+      </Drawer>
+    </GestureHandlerRootView>
   );
 };
 
