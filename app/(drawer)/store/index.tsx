@@ -9,15 +9,18 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { Product } from "../types/Product";
-import { productArray } from "../../data/productsArray";
-import StoreComponent from "../../components/addProductStore";
+import { Product } from "../../types/Product";
+
+import StoreComponent from "../../../components/addProductStore";
+import { productArray } from "../../../data/productsArray";
 
 export const TodoPage = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>(productArray);
+
+  // aqui un useEffect que revise que no haya null en los tokens
 
   const handleAddProduct = (newProduct: Product) => {
     if (isEditMode && selectedProduct) {

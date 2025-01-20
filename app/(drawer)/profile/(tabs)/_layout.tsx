@@ -2,8 +2,8 @@ import { Tabs } from "expo-router";
 import { Text, View } from "react-native";
 import Fontisto from "@expo/vector-icons/Fontisto";
 
-import Card from "../../../components/CardComponent";
-import { infocard } from "../../../data/CardData";
+import Card from "../../../../components/CardComponent";
+import { infocard } from "../../../../data/CardData";
 
 export default () => {
   return (
@@ -15,7 +15,7 @@ export default () => {
             id={22}
             title={infocard.name}
             description={infocard.myInfo}
-            imgSource={require("../../../assets/f1.jpg")}
+            imgSource={require("../../../../assets/f1.jpg")}
           />
         ),
       }}
