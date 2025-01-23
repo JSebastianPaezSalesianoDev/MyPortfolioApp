@@ -8,24 +8,50 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { apiLogService } from "../service/apiLogService";
 
-const Login = () => {
+const Register = () => {
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
 
-  const handleLogin = () => {
-    console.log("Username:", username);
-    console.log("Password:", password);
-    alert("Iniciando sesión...");
+  /*   const handleRegister = () => {
+    alert("Redirigiendo a la página de registro...");
+  };
+ */
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+  const isValidPassword = (password: string) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    return password.length >= 5 && hasUpperCase;
   };
 
-  const handleRegister = () => {
-    alert("Redirigiendo a la página de registro...");
+  const handleRegister = async () => {
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      alert(
+        "Password must be at least 5 characters long and contain at least one uppercase letter"
+      );
+      return;
+    }
+
+    try {
+      await apiLogService.registerUser(email, username, password);
+      alert("Registration successful");
+    } catch (error: any) {
+      alert("Registration failed: " + error.message);
+    }
   };
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Register</Text>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -37,19 +63,31 @@ const Login = () => {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={(text) => setEmail(text)}
+        />
+      </View>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
           placeholder="Password"
           secureTextEntry
           value={password}
           onChangeText={(text) => setPassword(text)}
         />
       </View>
-      <TouchableOpacity onPress={handleLogin} style={styles.button}>
-        <Text style={styles.buttonText}>Login</Text>
+      <TouchableOpacity onPress={handleRegister} style={styles.button}>
+        <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
       <Text style={styles.registerText}>
-        ¿No tienes una cuenta?{" "}
-        <Link href="/register" style={styles.link} onPress={handleRegister}>
-          Registrarse
+        ¿Ya tienes una cuenta?{" "}
+        <Link
+          href="/../authUser/Login"
+          style={styles.link}
+          onPress={handleRegister}
+        >
+          Ingresar
         </Link>
       </Text>
     </GestureHandlerRootView>
@@ -105,4 +143,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Login;
+export default Register;
