@@ -1,4 +1,5 @@
 import { Link } from "expo-router";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { apiLogService } from "../service/apiLogService";
+import ToastManager, { Toast } from "toastify-react-native";
 
 const Register = () => {
   const [username, setUsername] = useState<string>("");
@@ -30,28 +32,40 @@ const Register = () => {
 
   const handleRegister = async () => {
     if (!isValidEmail(email)) {
-      alert("Please enter a valid email address");
+      Toast.warn("Please enter a valid email address");
       return;
     }
 
     if (!isValidPassword(password)) {
-      alert(
-        "Password must be at least 5 characters long and contain at least one uppercase letter"
-      );
+      Toast.warn("Pw must be > 5 letters");
       return;
     }
 
     try {
-      await apiLogService.registerUser(email, username, password);
-      alert("Registration successful");
+      const responseStatus = await apiLogService.registerUser(
+        email,
+        username,
+        password
+      );
+      if (responseStatus == "200" || responseStatus == "201") {
+        Toast.success("Registration successful");
+        router.navigate("authUser/login");
+      }
+      Toast.success("Registration successful");
     } catch (error: any) {
-      alert("Registration failed: " + error.message);
+      Toast.error("Registration failed: " + error.message);
     }
   };
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+      <ToastManager
+        position="top"
+        animationIn={"fadeIn"}
+        animationOut={"fadeOut"}
+        width={"auto"}
+      />
+      ;<Text style={styles.title}>Registro</Text>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -78,12 +92,12 @@ const Register = () => {
         />
       </View>
       <TouchableOpacity onPress={handleRegister} style={styles.button}>
-        <Text style={styles.buttonText}>Register</Text>
+        <Text style={styles.buttonText}>Crear cuenta</Text>
       </TouchableOpacity>
       <Text style={styles.registerText}>
         ¿Ya tienes una cuenta?{" "}
         <Link
-          href="/../authUser/Login"
+          href="/../authUser/login"
           style={styles.link}
           onPress={handleRegister}
         >

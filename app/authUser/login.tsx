@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import React, { useState } from "react";
 import {
   StyleSheet,
@@ -8,30 +8,50 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import ToastManager, { Toast } from "toastify-react-native";
+import { apiLogService } from "../service/apiLogService";
 
 const Login = () => {
-  const [username, setUsername] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
 
-  const handleLogin = () => {
-    console.log("Username:", username);
+  const handleLogin = async () => {
+    console.log("Username:", email);
     console.log("Password:", password);
-    alert("Iniciando sesión...");
+    Toast.warn("Iniciando sesión...");
+    try {
+      let token = await apiLogService.loginUser(email, password);
+
+      if (token == null) {
+        Toast.warn("Login failed");
+      } else {
+        Toast.success("Registration successful");
+        router.navigate("../welcomePage");
+      }
+    } catch (error: any) {
+      Toast.error("Registration failed: " + error.message);
+    }
   };
 
   const handleRegister = () => {
-    alert("Redirigiendo a la página de registro...");
+    Toast.warn("Redirigiendo a la página de registro...");
   };
 
   return (
     <GestureHandlerRootView style={styles.container}>
       <Text style={styles.title}>Login</Text>
+      <ToastManager
+        position="top"
+        animationIn={"fadeIn"}
+        animationOut={"fadeOut"}
+        width={"auto"}
+      />
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Username"
-          value={username}
-          onChangeText={(text) => setUsername(text)}
+          placeholder="Email"
+          value={email}
+          onChangeText={(text) => setEmail(text)}
         />
       </View>
       <View style={styles.inputContainer}>
@@ -49,7 +69,7 @@ const Login = () => {
       <Text style={styles.registerText}>
         ¿No tienes una cuenta?{" "}
         <Link
-          href="../authUser/Register"
+          href="../authUser/register"
           style={styles.link}
           onPress={handleRegister}
         >

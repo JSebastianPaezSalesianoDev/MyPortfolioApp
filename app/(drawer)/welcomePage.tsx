@@ -1,11 +1,21 @@
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { StyleSheet, Text, View, ImageBackground } from "react-native";
+import { StyleSheet, Text, View, ImageBackground, Button } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { SafeAreaView } from "react-native";
+import { asyncStorageService } from "../service/async-storage";
 export default function Page() {
   const image = require("../../assets/adf7ff14688846eb90770d4a284676fa.jpg");
+  const handleLogout = async () => {
+    try {
+      await asyncStorageService.remove(asyncStorageService.KEYS.userToken);
+
+      router.navigate("/authUser/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -44,6 +54,9 @@ export default function Page() {
                   iR AL TODO
                   <AntDesign name="caretleft" size={15} color="black" />
                 </Link>
+                <AntDesign name="caretright" size={15} color="black" />
+                <Button title="LOG OUT" onPress={handleLogout} />
+                <AntDesign name="caretleft" size={15} color="black" />
               </View>
               <View style={styles.welcomeView}>
                 {" "}
@@ -99,7 +112,7 @@ const styles = StyleSheet.create({
   welcomeView: {
     backgroundColor: "#FFF",
     padding: 2,
-    marginTop: 10,
+    marginTop: 4,
     width: "75%",
     alignItems: "center",
   },
@@ -115,7 +128,7 @@ const styles = StyleSheet.create({
     padding: 30,
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 50,
+    paddingTop: 30,
   },
   todo: {
     color: "#fff",
