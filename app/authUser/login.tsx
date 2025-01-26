@@ -15,21 +15,37 @@ const Login = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+  const isValidPassword = (password: string) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    return password.length >= 5 && hasUpperCase;
+  };
+
   const handleLogin = async () => {
-    console.log("Username:", email);
-    console.log("Password:", password);
-    Toast.warn("Iniciando sesión...");
+    if (!isValidEmail(email)) {
+      Toast.warn("Please enter a valid email address");
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      Toast.warn("Password must be > 5 letters and have an uppercase letter");
+      return;
+    }
+
     try {
-      let token = await apiLogService.loginUser(email, password);
+      const token = await apiLogService.loginUser(email, password);
 
       if (token == null) {
         Toast.warn("Login failed");
       } else {
-        Toast.success("Registration successful");
+        Toast.success("Login successful");
         router.navigate("../welcomePage");
       }
-    } catch (error: any) {
-      Toast.error("Registration failed: " + error.message);
+    } catch (error) {
+      Toast.error("Login failed");
     }
   };
 

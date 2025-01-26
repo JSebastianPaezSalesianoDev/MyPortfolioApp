@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { asyncStorageService } from "./async-storage";
+import { Alert } from "react-native";
 
 const ip: string = "192.168.1.130";
 const registerUser = async (
@@ -34,20 +35,28 @@ const registerUser = async (
 };
 
 const loginUser = async (email: string, password: string) => {
-  const response = await fetch("http://" + ip + ":5000/auth/login", {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email: email, pswd: password }),
-  });
+  try {
+    const response = await fetch("http://" + ip + ":5000/auth/login", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: email, pswd: password }),
+    });
 
-  const data = await response.json();
-  await asyncStorageService.save(asyncStorageService.KEYS.userToken, data);
-  if (response.status == 200 || response.ok) {
+    const data = await response.json();
+
+    if (response.status === 200 || response.ok) {
+      await asyncStorageService.save(asyncStorageService.KEYS.userToken, data);
+      Alert.alert("Login exitoso");
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error during login:", error);
+    return null;
   }
-  return data;
 };
 
 export const apiLogService = { registerUser, loginUser };
