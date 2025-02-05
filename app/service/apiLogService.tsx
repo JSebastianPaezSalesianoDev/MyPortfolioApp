@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { asyncStorageService } from "./async-storage";
 import { Alert } from "react-native";
 
-const ip: string = "192.168.1.130";
+const ip: string = "172.16.96.45";
 const registerUser = async (
   email: string,
   username: string,
