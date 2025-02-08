@@ -40,6 +40,13 @@ const _layout = () => {
             title: "AboutDogs",
           }}
         />
+        <Drawer.Screen
+          name="galery/index"
+          options={{
+            drawerLabel: "galery",
+            title: "galery",
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );
