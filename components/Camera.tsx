@@ -3,6 +3,7 @@ import React, { useRef, useState } from "react";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { save } from "../app/service/cameraService";
 
 type CameraProps = {
   setLastPicture: Function;
@@ -22,8 +23,22 @@ const Camera = ({ setLastPicture }: CameraProps) => {
 
   const takePicture = async () => {
     console.log("taking picture...");
-    const picture = await cameraRef.current?.takePictureAsync({ base64: true });
+    const picture: any = await cameraRef.current?.takePictureAsync({
+      base64: true,
+    });
+    const savedImage = await save(
+      picture.height,
+      picture.width,
+      picture.base64
+    );
 
+    if (savedImage) {
+      console.log("Image saved to API:", savedImage);
+      setLastPicture(picture.base64);
+      router.navigate("../../(drawer)/galery");
+    } else {
+      throw new Error("Failed to save image to API.");
+    }
     if (picture != null && picture.base64 != null) {
       setLastPicture(picture.base64);
       router.navigate("../../(drawer)/galery");
