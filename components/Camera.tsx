@@ -26,6 +26,7 @@ const Camera = ({ setLastPicture }: CameraProps) => {
 
     if (picture != null && picture.base64 != null) {
       setLastPicture(picture.base64);
+      router.navigate("../../(drawer)/galery");
     } else {
       alert("Ocurrió un error sacando una foto.");
     }
