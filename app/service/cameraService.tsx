@@ -16,7 +16,7 @@ export const getAllImages = async (): Promise<ImageItem[] | null> => {
       throw new Error("No user token found. Please log in.");
     }
 
-    const response = await fetch(`http://${ip}:5000/getAll`, {
+    const response = await fetch(`http://${ip}:5000/images/get-All`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -46,7 +46,7 @@ export const save = async (
       throw new Error("No user token found. Please log in.");
     }
 
-    const response = await fetch(`http://${ip}:5000/save`, {
+    const response = await fetch(`http://${ip}:5000/images/save`, {
       method: "POST",
       headers: {
         accept: "application/json",

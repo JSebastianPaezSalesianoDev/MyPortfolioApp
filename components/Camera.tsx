@@ -22,27 +22,38 @@ const Camera = ({ setLastPicture }: CameraProps) => {
   const toggleFlash = () => setFlash((flash) => !flash);
 
   const takePicture = async () => {
-    console.log("taking picture...");
-    const picture: any = await cameraRef.current?.takePictureAsync({
-      base64: true,
-    });
-    const savedImage = await save(
-      picture.height,
-      picture.width,
-      picture.base64
-    );
+    console.log("Taking picture...");
+    try {
+      const picture = await cameraRef.current?.takePictureAsync({
+        base64: true,
+      });
 
-    if (savedImage) {
+      if (!picture || !picture.base64) {
+        throw new Error("No picture data received.");
+      }
+
+      console.log("Picture taken successfully:", picture);
+
+      // Envía la foto a la API
+      const savedImage = await save(
+        picture.height,
+        picture.width,
+        picture.base64
+      );
+
+      if (!savedImage) {
+        throw new Error("Failed to save image to API.");
+      }
+
       console.log("Image saved to API:", savedImage);
+
+      // Guarda la foto en el estado (opcional)
       setLastPicture(picture.base64);
+
+      // Redirige a la galería
       router.navigate("../../(drawer)/galery");
-    } else {
-      throw new Error("Failed to save image to API.");
-    }
-    if (picture != null && picture.base64 != null) {
-      setLastPicture(picture.base64);
-      router.navigate("../../(drawer)/galery");
-    } else {
+    } catch (error) {
+      console.error("Error taking picture:", error);
       alert("Ocurrió un error sacando una foto.");
     }
   };

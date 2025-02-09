@@ -16,7 +16,6 @@ import { getAllImages, ImageItem } from "../../service/cameraService";
 import { getToken } from "../../service/async-galeryStorage";
 
 const { width } = Dimensions.get("window");
-
 const Galeria = () => {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,25 +25,31 @@ const Galeria = () => {
     setLoading(true);
     try {
       const token = await getToken();
+      console.log(token);
       if (!token) {
         Alert.alert("Error", "No user token found. Please log in.");
         return;
       }
 
       const data = await getAllImages();
+      console.log("Images fetched:", data);
       if (data) {
         setImages(data);
+        console.log(token);
       } else {
         Alert.alert("Error", "Failed to load images.");
+        console.log(token);
       }
     } catch (error) {
       console.error("Error loading images:", error);
+
       Alert.alert("Error", "An error occurred while loading images.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Cargar las imágenes al montar el componente
   useEffect(() => {
     loadImages();
   }, []);
@@ -56,14 +61,14 @@ const Galeria = () => {
         onPress={() => router.navigate("../../camera")}
         style={styles.button}
       >
-        <Text style={styles.buttonText}>Open Camera</Text>
+        <Text style={styles.buttonText}>Abrir cámara</Text>
       </TouchableOpacity>
 
       {/* Mostrar mensaje si no hay imágenes */}
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : images.length === 0 ? (
-        <Text style={styles.noImagesText}>No images found.</Text>
+        <Text style={styles.noImagesText}>No se encontraron im genes.</Text>
       ) : (
         // Mostrar las imágenes en un FlatList
         <FlatList
