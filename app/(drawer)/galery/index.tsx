@@ -17,6 +17,10 @@ const galery = () => {
       >
         <Text style={styles.buttonText}>Open Camera</Text>
       </TouchableOpacity>
+
+      <View>
+        <Text>Galery</Text>
+      </View>
     </View>
   );
 };

@@ -2,6 +2,7 @@ import { Button, Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useRef, useState } from "react";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 
 type CameraProps = {
   setLastPicture: Function;
@@ -47,6 +48,12 @@ const Camera = ({ setLastPicture }: CameraProps) => {
       ref={cameraRef}
       onCameraReady={() => console.log("Camera ready!")}
     >
+      <Pressable
+        style={styles.exitBoton}
+        onPress={() => router.navigate("../../(drawer)/galery")}
+      >
+        <Text> Exit </Text>
+      </Pressable>
       <View style={styles.buttonContainer}>
         <Pressable style={styles.iconButton} onPress={toggleFlash}>
           <Ionicons
@@ -58,6 +65,7 @@ const Camera = ({ setLastPicture }: CameraProps) => {
         <Pressable style={styles.pictureButton} onPress={takePicture}>
           <Text> </Text>
         </Pressable>
+
         <Pressable style={styles.iconButton} onPress={toggleFacing}>
           <Ionicons name="camera-reverse" size={32} color="black" />
         </Pressable>
@@ -100,5 +108,14 @@ const styles = StyleSheet.create({
     borderRadius: "50%",
     borderColor: "gray",
     borderWidth: 6,
+  },
+  exitBoton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 5,
   },
 });

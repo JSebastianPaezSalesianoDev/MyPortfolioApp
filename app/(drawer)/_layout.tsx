@@ -6,7 +6,7 @@ import { Drawer } from "expo-router/drawer";
 
 const _layout = () => {
   return (
-    <GestureHandlerRootView style={{ flex: 1, marginTop: "-16%" }}>
+    <GestureHandlerRootView style={{ flex: 1, marginTop: "-4%" }}>
       <Drawer
         screenOptions={{
           headerShown: true,
