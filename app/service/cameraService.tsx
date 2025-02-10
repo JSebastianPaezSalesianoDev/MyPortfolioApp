@@ -1,79 +1,92 @@
-import { Alert } from "react-native";
-import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import asyncStorageGaleryService from "./async-galeryStorage";
 
-const API_URL = "http://172.16.96.45:5000";
-
-export interface ImageItem {
-  id: string;
-  encodedData: string;
-  width: number;
-  height: number;
-}
-
-export const getAllImages = async (token: string): Promise<ImageItem[]> => {
+const getUserImages = async (): Promise<string[]> => {
   try {
-    const response = await axios.get(`${API_URL}/images/get-all`, {
+    // Obtener el token
+    const token = await asyncStorageGaleryService.getData("token");
+    if (!token) {
+      throw new Error("No se encontró el token de autenticación.");
+    }
+
+    // Hacer la solicitud GET a la API
+    const response = await fetch(`http:192.168.1.130:5000/images/get-all`, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
-    if (!response.data || !response.data.images) {
-      throw new Error("Respuesta inválida del servidor");
+    // Verificar si la respuesta es exitosa
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
 
-    return response.data.images;
+    // Parsear la respuesta JSON
+    const data = await response.json();
+    console.log(data.object);
+
+    if (Array.isArray(data.object)) {
+      // Extraer el campo "encodedData" de cada imagen
+      const images = data.object.map(
+        (img: any) => `data:image/jpeg;base64,${img.encodedData}`
+      );
+      return images; // Devuelve un array de URLs de imágenes en base64
+    } else {
+      console.warn("La API no devolvió un array de imágenes:", data);
+      return []; // Devuelve un array vacío
+    }
   } catch (error) {
-    console.error("Error obteniendo imágenes:", error);
-    Alert.alert("Error", "No se pudieron obtener las imágenes.");
-    return [];
+    console.error("Error al obtener las imágenes:", error);
+    return []; // Devuelve un array vacío en caso de error
   }
 };
 
-export const saveImage = async (
-  token: string,
-  base64: string,
+const saveImage = async (
+  imageBase64: string,
   width: number,
   height: number
-) => {
+): Promise<any> => {
   try {
-    const response = await axios.post(
-      `${API_URL}/images/save`,
-      { width, height, encodedData: base64 },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.data) {
-      throw new Error("No se recibió respuesta válida del servidor");
+    // Obtener el token
+    const token = await await asyncStorageGaleryService.getData("token");
+    if (!token) {
+      throw new Error("No se encontró el token de autenticación.");
     }
 
-    return response.data;
-  } catch (error) {
-    console.error("Error guardando imagen:", error);
-    Alert.alert("Error", "No se pudo guardar la imagen en la API");
-    return null;
-  }
-};
+    // Crear el cuerpo de la solicitud
+    const body = {
+      width,
+      height,
+      encodedData: imageBase64,
+    };
 
-export const deleteImage = async (token: string, imageId: string) => {
-  try {
-    const response = await axios.delete(`${API_URL}/images/${imageId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    console.log(body);
+    // Hacer la solicitud POST a la API
+    const response = await fetch(`192.168.1.130:5000/images/save`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     });
 
-    if (!response.data) {
-      throw new Error("No se recibió confirmación de eliminación");
+    // Verificar si la respuesta es exitosa
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
 
-    return response.data;
+    // Parsear la respuesta JSON
+    const data = await response.json();
+    return data; // Devuelve la respuesta de la API
   } catch (error) {
-    console.error("Error eliminando imagen:", error);
-    Alert.alert("Error", "No se pudo eliminar la imagen.");
-    return null;
+    console.error("Error al guardar la imagen:", error);
+    throw error;
   }
 };
+
+const cameraService = { getUserImages, saveImage };
+
+export default cameraService;

@@ -1,20 +1,32 @@
-// async-galeryStorage.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const getToken = async () => {
+const storeData = async (key: string, value: any) => {
   try {
-    const token = await AsyncStorage.getItem("userToken");
-    return token;
-  } catch (error) {
-    console.error("Error al obtener el token:", error);
-    return null;
+    const jsonValue = JSON.stringify(value);
+    await AsyncStorage.setItem(key, jsonValue);
+  } catch (e) {
+    console.error(e);
   }
 };
 
-export const removeToken = async () => {
+const getData = async (key: string) => {
   try {
-    await AsyncStorage.removeItem("userToken");
-  } catch (error) {
-    console.error("Error al eliminar el token:", error);
+    const jsonValue = await AsyncStorage.getItem(key);
+    return jsonValue != null ? JSON.parse(jsonValue) : null;
+  } catch (e) {
+    console.error(e);
   }
 };
+
+const removeData = async (key: string) => {
+  try {
+    await AsyncStorage.removeItem(key);
+    console.log(`Key "${key}" removed successfully.`);
+  } catch (error) {
+    console.error(`Failed to remove key "${key}":`, error);
+  }
+};
+
+const asyncStorageService = { storeData, getData, removeData };
+
+export default asyncStorageService;

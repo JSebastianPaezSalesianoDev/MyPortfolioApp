@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { asyncStorageService } from "./async-storage";
 import { Alert } from "react-native";
 
-const ip: string = "172.16.96.45";
+const ip: string = "192.168.1.130";
 const registerUser = async (
   email: string,
   username: string,
@@ -35,6 +35,7 @@ const registerUser = async (
 };
 
 const loginUser = async (email: string, password: string) => {
+  console.log("Función loginUser EN apiLogService.ts INICIADA");
   try {
     const response = await fetch("http://" + ip + ":5000/auth/login", {
       method: "POST",

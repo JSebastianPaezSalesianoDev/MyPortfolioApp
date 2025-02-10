@@ -1,175 +1,304 @@
-import React, { useEffect, useState, useCallback } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  Animated,
+  Button,
+  Dimensions,
   Image,
-  FlatList,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-  SafeAreaView,
-  ActivityIndicator,
-  Alert,
+  View,
   Modal,
 } from "react-native";
-import { router } from "expo-router";
-import {
-  getAllImages,
-  deleteImage,
-  ImageItem,
-} from "../../service/cameraService";
-import { getToken } from "../../service/async-galeryStorage";
+import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import React, { useEffect, useRef, useState } from "react";
+import { FlatList } from "react-native-gesture-handler";
+import { Ionicons } from "@expo/vector-icons";
+import cameraService from "../../service/cameraService";
+import LoadingSpinner from "../../../components/LoadingSpinner";
 
-const Gallery = () => {
-  const [images, setImages] = useState<ImageItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
+const { width, height } = Dimensions.get("window");
 
-  const loadImages = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert("Error", "No se encontró el token del usuario.");
-        return;
-      }
-      const fetchedImages = await getAllImages(token);
-      setImages(fetchedImages || []);
-    } catch (error) {
-      console.error("Error cargando imágenes:", error);
-      Alert.alert("Error", "No se pudieron cargar las imágenes.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const index = () => {
+  const [facing, setFacing] = useState<CameraType>("back");
+  const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [userImages, setUserImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
-    loadImages();
-  }, [loadImages]);
+    const fetchUserImages = async () => {
+      const images = await cameraService.getUserImages();
+      setUserImages(images);
+      setLoading(false);
+    };
 
-  const handleDelete = async (imageId: string) => {
-    const token = await getToken();
-    if (!token) return;
+    fetchUserImages();
+  }, []);
 
-    try {
-      await deleteImage(token, imageId);
-      setImages(images.filter((img) => img.id !== imageId));
-      setSelectedImage(null);
-    } catch (error) {
-      console.error("Error eliminando imagen:", error);
+  if (!permission) {
+    // Camera permissions are still loading.
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>
+          We need your permission to show the camera
+        </Text>
+        <Button onPress={requestPermission} title="grant permission" />
+      </View>
+    );
+  }
+
+  const openCamera = () => {
+    setIsCameraOpen(true);
+  };
+
+  const closeCamera = () => {
+    setIsCameraOpen(false);
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true });
+      if (photo != undefined) {
+        await cameraService.saveImage(photo.base64!, photo.width, photo.height);
+        setUserImages([photo.uri, ...userImages]);
+      }
     }
+    setIsCameraOpen(false);
+  };
+
+  function toggleCameraFacing() {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <LoadingSpinner />
+      </View>
+    );
+  }
+
+  const openImage = (image: string) => {
+    console.log("Image opened");
+    setSelectedImage(image);
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeImage = () => {
+    Animated.timing(scaleAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setSelectedImage(null));
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <TouchableOpacity
-        onPress={() => router.navigate("../camera")}
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>Abrir Cámara</Text>
+    <View style={styles.container}>
+      {userImages.length > 0 ? (
+        <>
+          <Text style={styles.title}>Imágenes:</Text>
+          <FlatList
+            data={userImages}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal
+            renderItem={({ item }) => (
+              <TouchableOpacity onPress={() => openImage(item)}>
+                <Image source={{ uri: item }} style={styles.thumbnail} />
+              </TouchableOpacity>
+            )}
+          />
+        </>
+      ) : (
+        <View>
+          <Text style={(styles.title, { alignSelf: "center" })}>
+            No hay imagenes
+          </Text>
+        </View>
+      )}
+
+      {/* Botón para abrir la cámara */}
+      <TouchableOpacity style={styles.openCameraButton} onPress={openCamera}>
+        <Ionicons name="camera" size={30} color="white" />
       </TouchableOpacity>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : images.length === 0 ? (
-        <Text style={styles.noImagesText}>No hay imágenes guardadas.</Text>
-      ) : (
-        <FlatList
-          data={images}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => setSelectedImage(item)}>
-              <Image
-                source={{ uri: item.encodedData }}
-                style={styles.thumbnail}
-              />
-            </TouchableOpacity>
-          )}
-        />
-      )}
-
-      {selectedImage && (
-        <Modal visible={true} transparent={true}>
-          <View style={styles.modalContainer}>
-            <Image
-              source={{ uri: selectedImage.encodedData }}
-              style={styles.fullImage}
-            />
-            <View style={styles.modalButtons}>
+      {/* Modal para la cámara */}
+      <Modal visible={isCameraOpen} animationType="slide">
+        <View style={styles.cameraContainer}>
+          <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+            <View style={styles.cameraButtons}>
               <TouchableOpacity
-                onPress={() => handleDelete(selectedImage.id)}
-                style={styles.deleteButton}
+                style={styles.flipCameraButton}
+                onPress={toggleCameraFacing}
               >
-                <Text style={styles.buttonText}>Eliminar</Text>
+                <Ionicons name="camera-reverse" size={30} color="white" />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setSelectedImage(null)}
-                style={styles.closeButton}
+                style={styles.cameraButton}
+                onPress={takePicture}
               >
-                <Text style={styles.buttonText}>Cerrar</Text>
+                <Ionicons name="radio-button-on" size={50} color="white" />
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
+          </CameraView>
+          <TouchableOpacity style={styles.closeButton} onPress={closeCamera}>
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Vista de imagen a pantalla completa */}
+      {selectedImage && (
+        <View style={styles.fullscreenOverlay}>
+          <TouchableOpacity style={styles.closeButton} onPress={closeImage}>
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+          <Animated.Image
+            source={{ uri: selectedImage }}
+            style={[
+              styles.fullscreenImage,
+              {
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
+          />
+        </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
+
+export default index;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    padding: 10,
+    justifyContent: "center",
+  },
+  message: {
+    textAlign: "center",
+    paddingBottom: 10,
+  },
+  camera: {
+    width: "100%",
+    height: "100%",
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    margin: 64,
+    justifyContent: "space-between",
   },
   button: {
-    backgroundColor: "#007BFF",
-    padding: 10,
-    borderRadius: 5,
+    alignSelf: "flex-end",
+    alignItems: "center",
+  },
+  text: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+  },
+  previewContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewImage: {
+    width: 300,
+    height: 300,
     marginBottom: 20,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    textAlign: "center",
-  },
-  noImagesText: {
-    fontSize: 18,
-    color: "#888",
+  thumbnailContainer: {
     marginTop: 20,
+    padding: 10,
+  },
+  thumbnailTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
   thumbnail: {
     width: 100,
     height: 100,
-    margin: 5,
-    borderRadius: 10,
+    marginRight: 10,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
+  fullscreenOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     justifyContent: "center",
     alignItems: "center",
   },
-  fullImage: {
-    width: "90%",
-    height: "70%",
-    borderRadius: 10,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    marginTop: 20,
-  },
-  deleteButton: {
-    backgroundColor: "red",
-    padding: 10,
-    borderRadius: 5,
-    marginRight: 20,
+  fullscreenImage: {
+    width: width * 0.9,
+    height: height * 0.7,
+    resizeMode: "contain",
   },
   closeButton: {
-    backgroundColor: "gray",
+    position: "absolute",
+    bottom: 20,
+    zIndex: 1,
+    alignSelf: "center",
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  cameraButton: {
+    bottom: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     padding: 10,
-    borderRadius: 5,
+    marginHorizontal: 30,
+    borderRadius: 50,
+  },
+  flipCameraButton: {
+    bottom: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: 10,
+    paddingBottom: 0,
+    height: "75%",
+    marginHorizontal: 30,
+    borderRadius: 50,
+  },
+  cameraContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "black",
+  },
+  cameraButtons: {
+    position: "absolute",
+    bottom: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 20,
+    paddingHorizontal: 20,
+  },
+  openCameraButton: {
+    position: "absolute",
+    bottom: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: 10,
+    alignSelf: "center",
+    borderRadius: 50,
   },
 });
-
-export default Gallery;
