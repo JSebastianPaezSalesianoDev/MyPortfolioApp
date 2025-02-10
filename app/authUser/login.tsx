@@ -1,5 +1,6 @@
 import { Link, router } from "expo-router";
 import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   StyleSheet,
   Text,
@@ -38,13 +39,23 @@ const Login = () => {
     try {
       const token = await apiLogService.loginUser(email, password);
 
+      console.log("Token recibido de apiLogService (ANTES de guardar):", token);
+
       if (token == null) {
         Toast.warn("Login failed");
       } else {
-        Toast.success("Login successful");
-        router.navigate("../welcomePage");
+        try {
+          await AsyncStorage.setItem("userToken", token); //
+          console.log("Token guardado en AsyncStorage:", token);
+          Toast.success("Login successful");
+          router.navigate("../welcomePage");
+        } catch (error) {
+          console.error("Error al guardar el token en AsyncStorage:", error);
+          Toast.error("Login failed (error saving token)");
+        }
       }
     } catch (error) {
+      console.error("Error en handleLogin:", error);
       Toast.error("Login failed");
     }
   };

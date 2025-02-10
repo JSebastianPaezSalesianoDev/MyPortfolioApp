@@ -1,148 +1,48 @@
-import { Button, Pressable, StyleSheet, Text, View } from "react-native";
-import React, { useRef, useState } from "react";
-import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
-import Ionicons from "@expo/vector-icons/Ionicons";
+// Camera.tsx
+
+import { StyleSheet, View, Button } from "react-native";
+import React, { useState, useCallback } from "react";
 import { router } from "expo-router";
-import { save } from "../app/service/cameraService";
+import CameraComponent from "../components/CameraComponent";
 
-type CameraProps = {
-  setLastPicture: Function;
-};
+const Camera = () => {
+  const [showCamera, setShowCamera] = useState(true);
+  const [refreshGallery, setRefreshGallery] = useState(false);
 
-const Camera = ({ setLastPicture }: CameraProps) => {
-  const cameraRef = useRef<CameraView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
+  const handleCaptureSuccess = useCallback(() => {
+    setRefreshGallery((prevState) => !prevState);
+  }, []);
 
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [flash, setFlash] = useState<boolean>(false);
-
-  const toggleFacing = () =>
-    setFacing((face) => (face === "back" ? "front" : "back"));
-
-  const toggleFlash = () => setFlash((flash) => !flash);
-
-  const takePicture = async () => {
-    console.log("Taking picture...");
-    try {
-      const picture = await cameraRef.current?.takePictureAsync({
-        base64: true,
-      });
-
-      if (!picture || !picture.base64) {
-        throw new Error("No picture data received.");
-      }
-
-      console.log("Picture taken successfully:", picture);
-
-      // Envía la foto a la API
-      const savedImage = await save(
-        picture.height,
-        picture.width,
-        picture.base64
-      );
-
-      if (!savedImage) {
-        throw new Error("Failed to save image to API.");
-      }
-
-      console.log("Image saved to API:", savedImage);
-
-      // Guarda la foto en el estado (opcional)
-      setLastPicture(picture.base64);
-
-      // Redirige a la galería
-      router.navigate("../../(drawer)/galery");
-    } catch (error) {
-      console.error("Error taking picture:", error);
-      alert("Ocurrió un error sacando una foto.");
-    }
+  const handleCloseCamera = () => {
+    setShowCamera(false);
+    router.back();
   };
 
-  if (!permission) {
-    return <View />;
-  } else if (!permission.granted) {
-    return (
-      <Button onPress={requestPermission} title="Dar permisos de cámara" />
-    );
-  }
-
   return (
-    <CameraView
-      enableTorch={flash}
-      style={styles.camera}
-      facing={facing}
-      mode="picture"
-      ref={cameraRef}
-      onCameraReady={() => console.log("Camera ready!")}
-    >
-      <Pressable
-        style={styles.exitBoton}
-        onPress={() => router.navigate("../../(drawer)/galery")}
-      >
-        <Text> Exit </Text>
-      </Pressable>
-      <View style={styles.buttonContainer}>
-        <Pressable style={styles.iconButton} onPress={toggleFlash}>
-          <Ionicons
-            name={flash ? "flash-off" : "flash"}
-            size={32}
-            color="black"
-          />
-        </Pressable>
-        <Pressable style={styles.pictureButton} onPress={takePicture}>
-          <Text> </Text>
-        </Pressable>
-
-        <Pressable style={styles.iconButton} onPress={toggleFacing}>
-          <Ionicons name="camera-reverse" size={32} color="black" />
-        </Pressable>
-      </View>
-    </CameraView>
+    <View style={styles.container}>
+      {showCamera ? (
+        <CameraComponent
+          onCapture={handleCaptureSuccess}
+          onClose={handleCloseCamera}
+        />
+      ) : (
+        <View style={styles.buttonContainer}>
+          <Button title="Open Camera" onPress={() => setShowCamera(true)} />
+        </View>
+      )}
+    </View>
   );
 };
 
-export default Camera;
-
 const styles = StyleSheet.create({
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
-  },
-  camera: {
-    height: "100%",
+  container: {
+    flex: 1,
   },
   buttonContainer: {
     flex: 1,
-    flexDirection: "row",
-    backgroundColor: "transparent",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    margin: 40,
-  },
-  iconButton: {
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: "50%",
-    borderColor: "gray",
-    borderWidth: 2,
-    padding: 8,
-  },
-  pictureButton: {
-    height: 80,
-    width: 80,
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: "50%",
-    borderColor: "gray",
-    borderWidth: 6,
-  },
-  exitBoton: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    zIndex: 1,
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 5,
   },
 });
+
+export default Camera;

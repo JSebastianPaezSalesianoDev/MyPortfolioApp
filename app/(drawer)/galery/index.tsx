@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+// Galeria.tsx
+
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,52 +13,50 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { getAllImages, ImageItem } from "../../service/cameraService";
 import { getToken } from "../../service/async-galeryStorage";
 
 const { width } = Dimensions.get("window");
+
 const Galeria = () => {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Función para cargar las imágenes
-  const loadImages = async () => {
+  const loadImages = useCallback(async () => {
     setLoading(true);
     try {
       const token = await getToken();
-      console.log(token);
+      console.log("Token recuperado en Galeria:", token);
       if (!token) {
         Alert.alert("Error", "No user token found. Please log in.");
+        setLoading(false);
         return;
       }
 
-      const data = await getAllImages();
-      console.log("Images fetched:", data);
-      if (data) {
-        setImages(data);
-        console.log(token);
+      console.log("Fetching images from API...");
+      const fetchedImages = await getAllImages(token);
+      console.log("Images fetched:", fetchedImages);
+
+      if (fetchedImages) {
+        setImages(fetchedImages);
       } else {
-        Alert.alert("Error", "Failed to load images.");
-        console.log(token);
+        setImages([]);
       }
     } catch (error) {
       console.error("Error loading images:", error);
-
       Alert.alert("Error", "An error occurred while loading images.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Cargar las imágenes al montar el componente
   useEffect(() => {
     loadImages();
-  }, []);
+  }, [loadImages]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Botón para abrir la cámara */}
       <TouchableOpacity
         onPress={() => router.navigate("../../camera")}
         style={styles.button}
@@ -64,13 +64,11 @@ const Galeria = () => {
         <Text style={styles.buttonText}>Abrir cámara</Text>
       </TouchableOpacity>
 
-      {/* Mostrar mensaje si no hay imágenes */}
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : images.length === 0 ? (
-        <Text style={styles.noImagesText}>No se encontraron im genes.</Text>
+        <Text style={styles.noImagesText}>No se encontraron imágenes.</Text>
       ) : (
-        // Mostrar las imágenes en un FlatList
         <FlatList
           data={images}
           keyExtractor={(item) => item.id.toString()}
@@ -87,7 +85,6 @@ const Galeria = () => {
   );
 };
 
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,

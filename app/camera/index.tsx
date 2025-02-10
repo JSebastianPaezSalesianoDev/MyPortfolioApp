@@ -1,53 +1,46 @@
-import { Image, StyleSheet, View, Text } from "react-native";
-import React, { useState } from "react";
-import Camera from "../../components/Camera";
+import { StyleSheet, View, Button } from "react-native";
+import React, { useState, useCallback } from "react";
+import { router } from "expo-router";
+import CameraComponent from "../../components/CameraComponent";
 
-const MyPicturesPage = () => {
-  const [lastPicture, setLastPicture] = useState<string>("");
+const Camera = () => {
+  const [showCamera, setShowCamera] = useState(true);
+  const [refreshGallery, setRefreshGallery] = useState(false);
+
+  const handleCaptureSuccess = useCallback(() => {
+    setRefreshGallery((prevState) => !prevState);
+  }, []);
+
+  const handleCloseCamera = () => {
+    setShowCamera(false);
+    router.back();
+  };
 
   return (
-    <View style={styles.pageContainer}>
-      <View style={styles.lastImageContainer}>
-        {lastPicture == "" ? null : (
-          <Image
-            style={styles.lastImage}
-            source={{ uri: `data:image/jpg;base64,${lastPicture}` }}
-          />
-        )}
-      </View>
-      <Camera setLastPicture={setLastPicture} />
+    <View style={styles.container}>
+      {showCamera ? (
+        <CameraComponent
+          onCapture={handleCaptureSuccess}
+          onClose={handleCloseCamera}
+        />
+      ) : (
+        <View style={styles.buttonContainer}>
+          <Button title="Open Camera" onPress={() => setShowCamera(true)} />
+        </View>
+      )}
     </View>
   );
 };
 
-export default MyPicturesPage;
-
 const styles = StyleSheet.create({
-  pageContainer: {
+  container: {
+    flex: 1,
+  },
+  buttonContainer: {
     flex: 1,
     justifyContent: "center",
-  },
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
-  },
-  camera: {
-    height: "100%",
-  },
-  lastImageContainer: {
-    width: 55,
-    height: 55,
-    position: "absolute",
-    zIndex: 2,
-    top: 0,
-    margin: 8,
-    backgroundColor: "lightgray",
-    display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  lastImage: {
-    width: 48,
-    height: 48,
   },
 });
+
+export default Camera;

@@ -1,73 +1,78 @@
-import { getToken } from "./async-galeryStorage";
+import { Alert } from "react-native";
 
-const ip: string = "172.16.96.45";
+// cameraService.ts
+const ip = "http://172.16.96.45:5000";
 
 export interface ImageItem {
-  id: number;
-  height: number;
-  width: number;
+  id: string;
   encodedData: string;
+  width: number;
+  height: number;
 }
 
-export const getAllImages = async (): Promise<ImageItem[] | null> => {
+export const getAllImages = async (token: string): Promise<ImageItem[]> => {
   try {
-    const token = await getToken();
-    if (!token) {
-      throw new Error("No user token found. Please log in.");
-    }
-
-    const response = await fetch(`http://${ip}:5000/images/get-All`, {
-      method: "GET",
+    const response = await fetch(`${ip}/images/get-all`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to fetch images: ${response.status}`);
+      console.error("HTTP error!", response.status);
+      return [];
     }
-
-    const data: ImageItem[] = await response.json();
-    return data;
+    const data = await response.json();
+    return data.images || [];
   } catch (error) {
-    console.error("Error fetching images:", error);
-    return null;
+    console.error("Error obteniendo imágenes:", error);
+    return [];
   }
 };
 
 export const save = async (
-  height: number,
+  token: string,
+  base64: string,
   width: number,
-  encodeData: string | undefined
-): Promise<ImageItem | null> => {
+  height: number
+) => {
   try {
-    const token = await getToken();
-    if (!token) {
-      throw new Error("No user token found. Please log in.");
-    }
-
-    const response = await fetch(`http://${ip}:5000/images/save`, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ height, width, data: encodeData }),
+    const requestBody = JSON.stringify({
+      // 1. Mueve JSON.stringify a una variable
+      width,
+      height,
+      encodedData: base64,
     });
 
-    if (response.status === 409) {
-      return null;
-    }
+    console.log("Cuerpo de la petición JSON (antes de fetch):", requestBody); // 2. LOG del requestBody <--- ¡CRUCIAL!
+
+    const response = await fetch(`${ip}/images/save`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: requestBody,
+    });
 
     if (!response.ok) {
-      throw new Error(`Failed to save image: ${response.status}`);
+      const errorText = await response.text();
+      console.error(
+        `Error al guardar la imagen: ${response.status} - ${errorText}`
+      );
+      throw new Error(
+        `Error al guardar la imagen: ${response.status} - ${errorText}`
+      );
     }
 
-    const data: ImageItem = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error("Error saving image:", error);
-    return null;
+    console.error("Error guardando imagen:", error);
+    Alert.alert(
+      // 4. Mensaje de error más específico en Alert (opcional)
+      "Error al guardar imagen",
+      "Ocurrió un error al guardar la imagen. Por favor, inténtalo de nuevo más tarde."
+    );
+    return null; // 5. Asegura que siempre se retorne null en catch
   }
 };

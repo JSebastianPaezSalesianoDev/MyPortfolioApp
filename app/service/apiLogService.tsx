@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { asyncStorageService } from "./async-storage";
 import { Alert } from "react-native";
 
-const ip: string = "192.168.1.130";
+const ip: string = "172.16.96.45";
 const registerUser = async (
   email: string,
   username: string,
@@ -48,11 +48,24 @@ const loginUser = async (email: string, password: string) => {
     const data = await response.json();
 
     if (response.status === 200 || response.ok) {
-      await asyncStorageService.save(asyncStorageService.KEYS.userToken, data);
-      Alert.alert("Login exitoso");
-      return data;
+      const token = data.object.token;
+      console.log("Token recibido del backend DENTRO de apiLogService:", token);
+
+      if (token) {
+        await asyncStorageService.save(
+          asyncStorageService.KEYS.userToken,
+          token
+        ); // Save ONLY the token
+        Alert.alert("Login exitoso");
+        return token;
+      } else {
+        console.error("Token not found in backend response data:", data);
+        return null;
+      }
+    } else {
+      console.error("Login failed - HTTP status:", response.status, data);
+      return null;
     }
-    return null;
   } catch (error) {
     console.error("Error during login:", error);
     return null;
