@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
+import axios from "axios";
 
-// cameraService.ts
-const ip = "http://172.16.96.45:5000";
+const API_URL = "http://172.16.96.45:5000";
 
 export interface ImageItem {
   id: string;
@@ -12,67 +12,68 @@ export interface ImageItem {
 
 export const getAllImages = async (token: string): Promise<ImageItem[]> => {
   try {
-    const response = await fetch(`${ip}/images/get-all`, {
+    const response = await axios.get(`${API_URL}/images/get-all`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
       },
     });
-    if (!response.ok) {
-      console.error("HTTP error!", response.status);
-      return [];
+
+    if (!response.data || !response.data.images) {
+      throw new Error("Respuesta inválida del servidor");
     }
-    const data = await response.json();
-    return data.images || [];
+
+    return response.data.images;
   } catch (error) {
     console.error("Error obteniendo imágenes:", error);
+    Alert.alert("Error", "No se pudieron obtener las imágenes.");
     return [];
   }
 };
 
-export const save = async (
+export const saveImage = async (
   token: string,
   base64: string,
   width: number,
   height: number
 ) => {
   try {
-    const requestBody = JSON.stringify({
-      // 1. Mueve JSON.stringify a una variable
-      width,
-      height,
-      encodedData: base64,
-    });
+    const response = await axios.post(
+      `${API_URL}/images/save`,
+      { width, height, encodedData: base64 },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-    console.log("Cuerpo de la petición JSON (antes de fetch):", requestBody); // 2. LOG del requestBody <--- ¡CRUCIAL!
-
-    const response = await fetch(`${ip}/images/save`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: requestBody,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `Error al guardar la imagen: ${response.status} - ${errorText}`
-      );
-      throw new Error(
-        `Error al guardar la imagen: ${response.status} - ${errorText}`
-      );
+    if (!response.data) {
+      throw new Error("No se recibió respuesta válida del servidor");
     }
 
-    return await response.json();
+    return response.data;
   } catch (error) {
     console.error("Error guardando imagen:", error);
-    Alert.alert(
-      // 4. Mensaje de error más específico en Alert (opcional)
-      "Error al guardar imagen",
-      "Ocurrió un error al guardar la imagen. Por favor, inténtalo de nuevo más tarde."
-    );
-    return null; // 5. Asegura que siempre se retorne null en catch
+    Alert.alert("Error", "No se pudo guardar la imagen en la API");
+    return null;
+  }
+};
+
+export const deleteImage = async (token: string, imageId: string) => {
+  try {
+    const response = await axios.delete(`${API_URL}/images/${imageId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.data) {
+      throw new Error("No se recibió confirmación de eliminación");
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error eliminando imagen:", error);
+    Alert.alert("Error", "No se pudo eliminar la imagen.");
+    return null;
   }
 };
