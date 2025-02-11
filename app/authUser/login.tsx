@@ -1,3 +1,4 @@
+// Login.tsx
 import { Link, router } from "expo-router";
 import React, { useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -10,7 +11,9 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import ToastManager, { Toast } from "toastify-react-native";
-import { apiLogService } from "../service/apiLogService";
+
+import asyncStorageGaleryService from "../../services/async-galeryStorage";
+import loginService from "../../services/apiLogService";
 
 const Login = () => {
   const [email, setEmail] = useState<string>("");
@@ -37,7 +40,7 @@ const Login = () => {
     }
 
     try {
-      const token = await apiLogService.loginUser(email, password);
+      const token = await loginService.logIn({ email: email, pswd: password }); // <--- LINEA MODIFICADA: Pasa un objeto como argumento
 
       console.log("Token recibido de apiLogService (ANTES de guardar):", token);
 
@@ -45,12 +48,24 @@ const Login = () => {
         Toast.warn("Login failed");
       } else {
         try {
-          await AsyncStorage.setItem("userToken", token); //
-          console.log("Token guardado en AsyncStorage:", token);
+          console.log(
+            "Attempting to save token to AsyncStorage using asyncStorageGaleryService..."
+          );
+          await asyncStorageGaleryService.storeData(
+            asyncStorageGaleryService.KEYS.userToken,
+            token
+          );
+          console.log(
+            "Token guardado en AsyncStorage usando asyncStorageGaleryService:",
+            token
+          );
           Toast.success("Login successful");
           router.navigate("../welcomePage");
         } catch (error) {
-          console.error("Error al guardar el token en AsyncStorage:", error);
+          console.error(
+            "Error al guardar el token en AsyncStorage (usando asyncStorageGaleryService):",
+            error
+          );
           Toast.error("Login failed (error saving token)");
         }
       }

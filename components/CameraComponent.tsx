@@ -1,10 +1,7 @@
-// components/CameraComponent.tsx (Simplified - sin forwardRef ni useImperativeHandle)
-
-import React, { useRef, useState, useCallback } from "react"; // Elimina forwardRef, useImperativeHandle de las imports
-import { View, Pressable, StyleSheet, Text, Alert } from "react-native";
-import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import LoadingSpinner from "./LoadingSpinner";
+import React, { useRef, useState } from "react";
+import { View, Pressable, StyleSheet, Text, Alert, Image } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import cameraService from "../services/cameraService";
 
 type CameraComponentProps = {
   onCapture: (base64Image: string) => void;
@@ -15,24 +12,14 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
   onCapture,
   onClose,
 }) => {
-  // Componente funcional simple, sin forwardRef
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [facing, setFacing] = useState<"front" | "back">("back");
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
-  if (!permission) return <View />;
-  if (!permission.granted)
-    return (
-      <Pressable onPress={requestPermission} style={styles.permissionButton}>
-        <Text style={styles.permissionText}>Permitir Cámara</Text>
-      </Pressable>
-    );
-
-  const takePicture = useCallback(async () => {
+  const takePicture = async () => {
     if (!cameraRef.current) return;
 
-    setLoading(true);
     try {
       const picture = await cameraRef.current.takePictureAsync({
         base64: true,
@@ -41,62 +28,86 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
 
       if (picture?.base64) {
         onCapture(picture.base64);
+        setCapturedImage(picture.uri);
+        await cameraService.saveImage(
+          picture.base64,
+          picture.width,
+          picture.height
+        );
+        console.log("Foto tomada y guardada muy exitosamente");
       } else {
         alert("Error al tomar la foto");
       }
     } catch (error) {
-      console.error("Error al capturar la imagen:", error);
-      Alert.alert("Error", "Error taking picture.");
+      console.error("Error al capturar o guardar la imagen:", error);
+      Alert.alert("Error", "Error tomando o guardando la foto.");
     } finally {
-      setLoading(false);
       onClose();
     }
-  }, [onCapture, onClose]);
+  };
+
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  };
+
+  if (!permission) {
+    return (
+      <View>
+        <Text>Hola</Text>
+      </View>
+    );
+  } else if (!permission.granted) {
+    return (
+      <>
+        <Text>sin permisos</Text>
+        <Pressable onPress={requestPermission} style={styles.permissionButton}>
+          <Text style={styles.permissionText}>Permitir Cámara</Text>
+        </Pressable>
+      </>
+    );
+  }
 
   return (
-    <View style={styles.container}>
+    <>
       <CameraView
         style={styles.camera}
         facing={facing}
         mode="picture"
         ref={cameraRef}
-      />
-      <View style={styles.buttonContainer}>
-        <Pressable
-          onPress={() => setFacing(facing === "back" ? "front" : "back")}
-          style={styles.iconButton}
-        >
-          <Ionicons name="camera-reverse" size={32} color="black" />
-        </Pressable>
-
-        <Pressable onPress={takePicture} style={styles.pictureButton}>
-          <Text>📸</Text>
-        </Pressable>
-
-        <Pressable onPress={onClose} style={styles.iconButton}>
-          <Ionicons name="close" size={32} color="black" />
-        </Pressable>
-      </View>
-
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <LoadingSpinner />
+        onCameraReady={() => console.log("Cámara lista!")}
+      >
+        <View style={styles.buttonContainer}>
+          <Pressable onPress={onClose} style={styles.iconButton}>
+            <Text style={styles.pictureButtonText}>🔙</Text>
+          </Pressable>
+          <Pressable onPress={takePicture} style={styles.pictureButton}>
+            <Text style={styles.pictureButtonText}>📸</Text>
+          </Pressable>
+          <Pressable onPress={toggleCameraFacing} style={styles.iconButton}>
+            <Text style={styles.pictureButtonText}>🔄</Text>
+          </Pressable>
         </View>
-      )}
-    </View>
+        {capturedImage && (
+          <View style={styles.previewContainer}>
+            <Image
+              source={{ uri: capturedImage }}
+              style={styles.previewImage}
+            />
+          </View>
+        )}
+      </CameraView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   camera: {
     flex: 1,
+    backgroundColor: "red",
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     alignItems: "center",
     position: "absolute",
     bottom: 40,
@@ -118,20 +129,29 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "black",
   },
-  permissionButton: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  pictureButtonText: {
+    fontSize: 20,
+    fontWeight: "bold",
   },
+  permissionButton: {},
   permissionText: {
     fontSize: 18,
     color: "blue",
   },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+  previewContainer: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "white",
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
   },
 });
 

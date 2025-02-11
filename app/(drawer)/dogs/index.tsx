@@ -1,6 +1,6 @@
 import { Button, Image, StyleSheet, Text, View } from "react-native";
 import React, { useEffect, useState } from "react";
-import { dogService } from "../../service/dogService";
+import { dogService } from "../../../services/dogService";
 
 const DogsPage = () => {
   const [dogImage, setDogImage] = useState<string>(

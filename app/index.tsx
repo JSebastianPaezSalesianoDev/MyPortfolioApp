@@ -1,24 +1,35 @@
+// startPage.tsx
 import React, { useEffect, useState } from "react";
 import { router } from "expo-router";
-import { asyncStorageService } from "./service/async-storage";
+import asyncStorageGaleryService from "../services/async-galeryStorage";
 
-const startPage = () => {
-  const [userTokenData, setUserToken] = useState<string>("");
+const StartPage = () => {
+  const [userTokenData, setUserToken] = useState<string | null>(null);
 
   useEffect(() => {
     const redirectIfTokenExists = async () => {
-      let token = await asyncStorageService.get(
-        asyncStorageService.KEYS.userToken
-      );
-      if (token != null) {
-        router.navigate("/welcomePage");
-      } else {
-        router.navigate("authUser/login");
+      try {
+        const token = await asyncStorageGaleryService.getData(
+          asyncStorageGaleryService.KEYS.userToken
+        );
+        console.log("Token recuperado en StartPage:", token);
+
+        if (token) {
+          console.log("Token encontrado, navegando a welcomePage...");
+          router.replace("/welcomePage");
+        } else {
+          console.log("Token NO encontrado, navegando a authUser/login...");
+          router.replace("/authUser/login");
+        }
+      } catch (error) {
+        console.error("Error al verificar el token en StartPage:", error);
+        router.replace("/authUser/login");
       }
     };
     redirectIfTokenExists();
   }, []);
+
   return null;
 };
 
-export default startPage;
+export default StartPage;

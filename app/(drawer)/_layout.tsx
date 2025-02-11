@@ -13,7 +13,7 @@ const _layout = () => {
         }}
       >
         <Drawer.Screen
-          name="index"
+          name="welcomePage"
           options={{
             drawerLabel: "Home",
             title: "Bienvenido",

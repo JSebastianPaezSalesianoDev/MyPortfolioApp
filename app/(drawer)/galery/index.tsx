@@ -1,304 +1,186 @@
+// Galeria.tsx - Código FINAL y Completo
+
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
-  Animated,
-  Button,
-  Dimensions,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
+  Text,
+  FlatList,
+  Image,
+  Pressable,
   Modal,
+  Button,
+  Alert,
+  StyleSheet,
+  SafeAreaView,
+  Dimensions,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import React, { useEffect, useRef, useState } from "react";
-import { FlatList } from "react-native-gesture-handler";
-import { Ionicons } from "@expo/vector-icons";
-import cameraService from "../../service/cameraService";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingSpinner from "../../../components/LoadingSpinner";
+import CameraComponent from "../../../components/CameraComponent";
+import { CameraView } from "expo-camera";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-const index = () => {
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
-  const [permission, requestPermission] = useCameraPermissions();
-  const [userImages, setUserImages] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+interface ImageItem {
+  encodedData: string;
+  timestamp: string;
+}
+
+const Galeria = () => {
+  const [images, setImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showCamera, setShowCamera] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const cameraRef = useRef<CameraView | null>(null);
 
-  const cameraRef = useRef<CameraView>(null);
+  const loadImages = useCallback(async () => {
+    setLoading(true);
+    try {
+      const localImages: string[] = [];
+      const keys = await AsyncStorage.getAllKeys();
+      const imageKeys = keys.filter((key) => key.startsWith("localImage_"));
 
-  useEffect(() => {
-    const fetchUserImages = async () => {
-      const images = await cameraService.getUserImages();
-      setUserImages(images);
+      if (imageKeys.length > 0) {
+        const storedImages = await AsyncStorage.multiGet(imageKeys);
+        storedImages.forEach(([_key, base64Data]) => {
+          if (base64Data) {
+            localImages.push(base64Data);
+          }
+        });
+      }
+      setImages(localImages);
+    } catch (error) {
+      console.error("Error loading local images:", error);
+      Alert.alert("Error", "Failed to load images from local storage.");
+    } finally {
       setLoading(false);
-    };
-
-    fetchUserImages();
+    }
   }, []);
 
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
+  useEffect(() => {
+    loadImages();
+  }, [loadImages]);
 
-  if (!permission.granted) {
-    // Camera permissions are not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
-
-  const openCamera = () => {
-    setIsCameraOpen(true);
-  };
-
-  const closeCamera = () => {
-    setIsCameraOpen(false);
-  };
-
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync({ base64: true });
-      if (photo != undefined) {
-        await cameraService.saveImage(photo.base64!, photo.width, photo.height);
-        setUserImages([photo.uri, ...userImages]);
-      }
+  const handleImageCaptured = useCallback(async (base64Image: string) => {
+    try {
+      const timestamp = Date.now();
+      await AsyncStorage.setItem(`localImage_${timestamp}`, base64Image);
+      setImages((prevImages) => [...prevImages, base64Image]);
+      setShowCamera(false);
+    } catch (error) {
+      console.error("Error saving image locally:", error);
+      Alert.alert("Error", "Failed to save image locally.");
     }
-    setIsCameraOpen(false);
-  };
+  }, []);
 
-  function toggleCameraFacing() {
-    setFacing((current) => (current === "back" ? "front" : "back"));
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <LoadingSpinner />
-      </View>
+  const handleDeleteImage = async (base64ImageToDelete: string) => {
+    Alert.alert(
+      "Eliminar imagen",
+      "¿Estás seguro de que quieres eliminar esta imagen?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const keys = await AsyncStorage.getAllKeys();
+              for (const key of keys) {
+                if (key.startsWith("localImage_")) {
+                  const storedImage = await AsyncStorage.getItem(key);
+                  if (storedImage === base64ImageToDelete) {
+                    await AsyncStorage.removeItem(key);
+                    break;
+                  }
+                }
+              }
+              setImages((prev) =>
+                prev.filter((img) => img !== base64ImageToDelete)
+              );
+            } catch (error) {
+              console.error("Error deleting image:", error);
+              Alert.alert("Error", "Failed to delete image.");
+            } finally {
+              setLoading(false);
+              setSelectedImage(null);
+            }
+          },
+          style: "destructive",
+        },
+      ]
     );
-  }
-
-  const openImage = (image: string) => {
-    console.log("Image opened");
-    setSelectedImage(image);
-    Animated.timing(scaleAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeImage = () => {
-    Animated.timing(scaleAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => setSelectedImage(null));
   };
 
   return (
-    <View style={styles.container}>
-      {userImages.length > 0 ? (
-        <>
-          <Text style={styles.title}>Imágenes:</Text>
-          <FlatList
-            data={userImages}
-            keyExtractor={(item, index) => index.toString()}
-            horizontal
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => openImage(item)}>
-                <Image source={{ uri: item }} style={styles.thumbnail} />
-              </TouchableOpacity>
-            )}
-          />
-        </>
-      ) : (
-        <View>
-          <Text style={(styles.title, { alignSelf: "center" })}>
-            No hay imagenes
-          </Text>
-        </View>
-      )}
-
-      {/* Botón para abrir la cámara */}
-      <TouchableOpacity style={styles.openCameraButton} onPress={openCamera}>
-        <Ionicons name="camera" size={30} color="white" />
-      </TouchableOpacity>
-
-      {/* Modal para la cámara */}
-      <Modal visible={isCameraOpen} animationType="slide">
-        <View style={styles.cameraContainer}>
-          <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-            <View style={styles.cameraButtons}>
-              <TouchableOpacity
-                style={styles.flipCameraButton}
-                onPress={toggleCameraFacing}
-              >
-                <Ionicons name="camera-reverse" size={30} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cameraButton}
-                onPress={takePicture}
-              >
-                <Ionicons name="radio-button-on" size={50} color="white" />
-              </TouchableOpacity>
-            </View>
-          </CameraView>
-          <TouchableOpacity style={styles.closeButton} onPress={closeCamera}>
-            <Ionicons name="close" size={30} color="white" />
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
-      {/* Vista de imagen a pantalla completa */}
-      {selectedImage && (
-        <View style={styles.fullscreenOverlay}>
-          <TouchableOpacity style={styles.closeButton} onPress={closeImage}>
-            <Ionicons name="close" size={30} color="white" />
-          </TouchableOpacity>
-          <Animated.Image
-            source={{ uri: selectedImage }}
-            style={[
-              styles.fullscreenImage,
-              {
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}
-          />
-        </View>
-      )}
-    </View>
+    <CameraComponent
+      onCapture={handleImageCaptured}
+      onClose={() => setShowCamera(false)}
+    />
   );
 };
 
-export default index;
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
-  },
-  camera: {
-    width: "100%",
-    height: "100%",
-    flex: 1,
-  },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "transparent",
-    margin: 64,
-    justifyContent: "space-between",
-  },
-  button: {
-    alignSelf: "flex-end",
-    alignItems: "center",
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
-  },
-  previewContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  previewImage: {
-    width: 300,
-    height: 300,
-    marginBottom: 20,
-  },
-  thumbnailContainer: {
-    marginTop: 20,
-    padding: 10,
-  },
-  thumbnailTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  thumbnail: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
-  },
-  fullscreenOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fullscreenImage: {
-    width: width * 0.9,
-    height: height * 0.7,
-    resizeMode: "contain",
-  },
-  closeButton: {
-    position: "absolute",
-    bottom: 20,
-    zIndex: 1,
-    alignSelf: "center",
+    padding: 20,
+    backgroundColor: "blue",
   },
   title: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    textAlign: "center",
     marginBottom: 10,
   },
-  cameraButton: {
-    bottom: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 10,
-    marginHorizontal: 30,
-    borderRadius: 50,
-  },
-  flipCameraButton: {
-    bottom: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 10,
-    paddingBottom: 0,
-    height: "75%",
-    marginHorizontal: 30,
-    borderRadius: 50,
-  },
-  cameraContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "black",
-  },
-  cameraButtons: {
-    position: "absolute",
-    bottom: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    gap: 20,
-    paddingHorizontal: 20,
+  image: {
+    width: Dimensions.get("window").width / 3 - 10,
+    height: Dimensions.get("window").width / 3 - 10,
+    margin: 5,
   },
   openCameraButton: {
-    position: "absolute",
-    bottom: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "#007BFF",
     padding: 10,
-    alignSelf: "center",
-    borderRadius: 50,
+    borderRadius: 5,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  openCameraButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+  modalOverlay: {
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalImage: {
+    // width: "100%",
+    // height: "80%",
+    resizeMode: "contain",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 20,
+  },
+  cameraComponentContainer: {
+    flex: 1,
+    flexGrow: 1,
+    height: "100%",
+
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  noImagesText: {
+    fontSize: 18,
+    textAlign: "center",
+    marginTop: 20,
+    color: "#888",
   },
 });
+
+export default Galeria;

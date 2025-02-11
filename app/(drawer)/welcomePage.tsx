@@ -1,16 +1,19 @@
+// welcomePage.tsx
 import { Link, router } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { StyleSheet, Text, View, ImageBackground, Button } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { SafeAreaView } from "react-native";
-import { asyncStorageService } from "../service/async-storage";
-export default function Page() {
+import asyncStorageGaleryService from "../../services/async-galeryStorage"; // Import asyncStorageGaleryService
+
+export default function WelcomePage() {
   const image = require("../../assets/adf7ff14688846eb90770d4a284676fa.jpg");
   const handleLogout = async () => {
     try {
-      await asyncStorageService.remove(asyncStorageService.KEYS.userToken);
-
+      await asyncStorageGaleryService.removeData(
+        asyncStorageGaleryService.KEYS.userToken
+      ); // Corrected line: Usa asyncStorageGaleryService.KEYS.userToken
       router.navigate("/authUser/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -41,17 +44,16 @@ export default function Page() {
             <View style={styles.pressmeBox}>
               <View style={styles.welcomeView}>
                 <Link href="./profile">
-                  <Text>
-                    <AntDesign name="caretright" size={15} color="black" />
-                    Watch my repo!!
-                    <AntDesign name="caretleft" size={15} color="black" />
-                  </Text>
+                  <AntDesign name="caretright" size={15} color="black" />
+                  <Text>Watch my repo!!</Text>
+                  <AntDesign name="caretleft" size={15} color="black" />
                 </Link>
               </View>
               <View style={styles.welcomeView}>
                 <Link href="./todo">
                   <AntDesign name="caretright" size={15} color="black" />
-                  iR AL TODO
+
+                  <Text>iR AL TODO</Text>
                   <AntDesign name="caretleft" size={15} color="black" />
                 </Link>
                 <AntDesign name="caretright" size={15} color="black" />
@@ -59,13 +61,11 @@ export default function Page() {
                 <AntDesign name="caretleft" size={15} color="black" />
               </View>
               <View style={styles.welcomeView}>
-                {" "}
                 <Link href="/store">
-                  {" "}
-                  <AntDesign name="caretright" size={15} color="black" /> IR A
-                  MI TIENDITA{" "}
-                  <AntDesign name="caretleft" size={15} color="black" />{" "}
-                </Link>{" "}
+                  <AntDesign name="caretright" size={15} color="black" />
+                  <Text> IR A MI TIENDITA </Text>
+                  <AntDesign name="caretleft" size={15} color="black" />
+                </Link>
               </View>
             </View>
           </View>

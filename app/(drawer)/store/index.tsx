@@ -9,7 +9,7 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { Product } from "../../types/Product";
+import { Product } from "../../../types/Product";
 
 import StoreComponent from "../../../components/addProductStore";
 import { productArray } from "../../../data/productsArray";
