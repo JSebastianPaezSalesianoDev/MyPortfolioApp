@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { View, Pressable, StyleSheet, Text, Alert, Image } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import cameraService from "../services/cameraService";
+import asyncStorageGaleryService from "../services/async-galeryStorage";
 
 type CameraComponentProps = {
   onCapture: (base64Image: string) => void;
@@ -16,33 +17,29 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<"front" | "back">("back");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
 
   const takePicture = async () => {
-    if (!cameraRef.current) return;
+    console.log("Taking pikture...");
 
-    try {
-      const picture = await cameraRef.current.takePictureAsync({
-        base64: true,
-        quality: 0.5,
-      });
+    const image = await cameraRef.current?.takePictureAsync({ base64: true });
 
-      if (picture?.base64) {
-        onCapture(picture.base64);
-        setCapturedImage(picture.uri);
-        await cameraService.saveImage(
-          picture.base64,
-          picture.width,
-          picture.height
-        );
-        console.log("Foto tomada y guardada muy exitosamente");
-      } else {
-        alert("Error al tomar la foto");
-      }
-    } catch (error) {
-      console.error("Error al capturar o guardar la imagen:", error);
-      Alert.alert("Error", "Error tomando o guardando la foto.");
-    } finally {
-      onClose();
+    if (image!.base64) {
+      const token = await asyncStorageGaleryService.getData(
+        asyncStorageGaleryService.KEYS.userToken
+      );
+      await cameraService.savePicture(
+        token,
+        image!.height,
+        image!.width,
+        image!.base64
+      );
+    }
+    if (image != null && image.base64 != null) {
+      setCapturedImage(image.base64);
+    } else {
+      setCapturedImage(null);
+      console.log("Error tomand la foto, null");
     }
   };
 
@@ -53,13 +50,13 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
   if (!permission) {
     return (
       <View>
-        <Text>Hola</Text>
+        <Text>Cargando permisos...</Text>
       </View>
     );
   } else if (!permission.granted) {
     return (
       <>
-        <Text>sin permisos</Text>
+        <Text>Sin permisos</Text>
         <Pressable onPress={requestPermission} style={styles.permissionButton}>
           <Text style={styles.permissionText}>Permitir Cámara</Text>
         </Pressable>
@@ -74,7 +71,10 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
         facing={facing}
         mode="picture"
         ref={cameraRef}
-        onCameraReady={() => console.log("Cámara lista!")}
+        onCameraReady={() => {
+          console.log("Cámara lista!");
+          setCameraReady(true);
+        }}
       >
         <View style={styles.buttonContainer}>
           <Pressable onPress={onClose} style={styles.iconButton}>

@@ -40,8 +40,7 @@ const Login = () => {
     }
 
     try {
-      const token = await loginService.logIn({ email: email, pswd: password }); // <--- LINEA MODIFICADA: Pasa un objeto como argumento
-
+      const token = await loginService.logIn({ email: email, pswd: password });
       console.log("Token recibido de apiLogService (ANTES de guardar):", token);
 
       if (token == null) {

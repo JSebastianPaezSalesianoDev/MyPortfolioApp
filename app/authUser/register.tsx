@@ -9,8 +9,9 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { apiLogService } from "../../services/apiLogService";
+
 import ToastManager, { Toast } from "toastify-react-native";
+import loginService from "../../services/apiLogService";
 
 const Register = () => {
   const [username, setUsername] = useState<string>("");
@@ -40,18 +41,16 @@ const Register = () => {
       Toast.warn("Pw must be > 5 letters");
       return;
     }
+    const user = {
+      fullname: username,
+      email: email,
+      pswd: password,
+    };
 
     try {
-      const responseStatus = await apiLogService.registerUser(
-        email,
-        username,
-        password
-      );
-      if (responseStatus == "200" || responseStatus == "201") {
-        Toast.success("Registration successful");
-        router.navigate("authUser/login");
-      }
+      await loginService.register(user);
       Toast.success("Registration successful");
+      router.navigate("authUser/login");
     } catch (error: any) {
       Toast.error("Registration failed: " + error.message);
     }

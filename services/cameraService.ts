@@ -1,88 +1,56 @@
-// cameraService.ts
-import asyncStorageGaleryService from "./async-galeryStorage";
-import { Alert } from "react-native";
 import axios from "axios";
-// colegio :172.16.96.45
-// casa: 192.168.1.130
 
-const API_URL = "http://192.168.1.130:5000";
-export interface ImageItem {
-  id: string;
-  encodedData: string;
-  width: number;
-  height: number;
-}
+const IP = "192.168.1.102";
 
-export const getAllImages = async (): Promise<ImageItem[]> => {
-  try {
-    const token = await asyncStorageGaleryService.getData(
-      asyncStorageGaleryService.KEYS.userToken
-    );
-    console.log("Token recuperado en getAllImages:", token);
+// 172.16.98.164
 
-    if (!token) {
-      throw new Error("No se encontró el token de autenticación.");
-    }
+const getAllPictures = async (token: string | unknown) => {
+  const response = await axios.get("http://" + IP + ":5000/images/get-all", {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    const response = await axios.get(`${API_URL}/images/get-all`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const json = await response.data.object;
 
-    console.log("Respuesta del servidor (getAllImages):", response.data);
-
-    if (!response.data || !response.data.images) {
-      throw new Error("Respuesta inválida del servidor");
-    }
-
-    return response.data.images;
-  } catch (error) {
-    console.error("Error obteniendo imágenes:", error);
-    Alert.alert("Error", "No se pudieron obtener las imágenes.");
-    return [];
+  if (response.status == 409) {
+    return null;
   }
+
+  return json;
 };
 
-export const saveImage = async (
-  imageBase64: string,
+const savePicture = async (
+  token: string | unknown,
+  height: number,
   width: number,
-  height: number
-): Promise<any> => {
-  try {
-    const token = await asyncStorageGaleryService.getData(
-      asyncStorageGaleryService.KEYS.userToken
-    );
-    console.log("Token recuperado en saveImage:", token);
-    if (!token) {
-      throw new Error("No se encontró el token de autenticación.");
-    }
+  encodedData: string | undefined
+) => {
+  const response = await fetch("http://" + IP + ":5000/images/save", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      height: height,
+      width: width,
+      encodedData: encodedData,
+    }),
+  });
 
-    const body = {
-      width,
-      height,
-      encodedData: imageBase64,
-    };
-
-    console.log("Cuerpo de la petición (saveImage):", body);
-
-    const response = await axios.post(`${API_URL}/images/save`, body, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    console.log("Respuesta del servidor (saveImage):", response.data);
-
-    return response.data;
-  } catch (error) {
-    console.error("Error al guardar la imagen:", error);
-    Alert.alert("Error", "Error al guardar la imagen.");
-    throw error;
+  if (response.status == 400 || response.status == 401) {
+    return null;
   }
+
+  return response.json();
 };
 
-const cameraService = { getAllImages, saveImage };
-
-export default cameraService;
+const PictureService = {
+  getAllPictures,
+  savePicture,
+};
+export default PictureService;
