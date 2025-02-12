@@ -39,37 +39,22 @@ const Login = () => {
       return;
     }
 
-    try {
-      const token = await loginService.logIn({ email: email, pswd: password });
-      console.log("Token recibido de apiLogService (ANTES de guardar):", token);
+    const token = await loginService.logIn(email, password);
+    console.log("token", token);
+    if (token == null) {
+      Toast.warn("Login failed");
+      return;
+    }
 
-      if (token == null) {
-        Toast.warn("Login failed");
-      } else {
-        try {
-          console.log(
-            "Attempting to save token to AsyncStorage using asyncStorageGaleryService..."
-          );
-          await asyncStorageGaleryService.storeData(
-            asyncStorageGaleryService.KEYS.userToken,
-            token
-          );
-          console.log(
-            "Token guardado en AsyncStorage usando asyncStorageGaleryService:",
-            token
-          );
-          Toast.success("Login successful");
-          router.navigate("../welcomePage");
-        } catch (error) {
-          console.error(
-            "Error al guardar el token en AsyncStorage (usando asyncStorageGaleryService):",
-            error
-          );
-          Toast.error("Login failed (error saving token)");
-        }
-      }
-    } catch (error) {
-      console.error("Error en handleLogin:", error);
+    const isTokenSaved = await asyncStorageGaleryService.storeData(
+      asyncStorageGaleryService.KEYS.userToken,
+      token
+    );
+
+    if (isTokenSaved) {
+      Toast.success("Login successful");
+      router.navigate("../welcomePage");
+    } else {
       Toast.error("Login failed");
     }
   };

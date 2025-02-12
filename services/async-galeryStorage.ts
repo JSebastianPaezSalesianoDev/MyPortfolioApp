@@ -5,14 +5,15 @@ const KEYS = {
   userToken: "userToken",
 };
 
-const save = async (key: string, value: any) => {
+const save = async (key: string, value: any): Promise<boolean> => {
   try {
     const jsonValue = JSON.stringify(value);
     await AsyncStorage.setItem(key, jsonValue);
-    console.log("Foto salvada");
+    return true;
   } catch (e) {
     console.error("Error en storeData:", e);
   }
+  return false;
 };
 
 const getData = async (key: string) => {

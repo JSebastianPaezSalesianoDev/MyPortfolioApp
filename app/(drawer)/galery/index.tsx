@@ -32,7 +32,7 @@ interface ImageItem {
 const Galeria = () => {
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showCamera, setShowCamera] = useState(true);
+  const [showCamera, setShowCamera] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
 
@@ -115,10 +115,24 @@ const Galeria = () => {
   };
 
   return (
-    <CameraComponent
-      onCapture={handleImageCaptured}
-      onClose={() => setShowCamera(false)}
-    />
+    <>
+      <Pressable
+        style={styles.openCameraButton}
+        onPress={() => setShowCamera(true)}
+      >
+        <Text style={styles.openCameraButtonText}>Abrir cámara</Text>
+      </Pressable>
+      {showCamera ? (
+        <CameraComponent
+          onCapture={handleImageCaptured}
+          onClose={() => setShowCamera(false)}
+        />
+      ) : (
+        <View>
+          <Text>Nada para mostrar</Text>
+        </View>
+      )}
+    </>
   );
 };
 

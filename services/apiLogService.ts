@@ -3,29 +3,25 @@ import { router } from "expo-router";
 import asyncStorageGaleryService from "./async-galeryStorage";
 import axios from "axios";
 
-const ip = "192.168.1.130";
-const logIn = async (form: { email: string; pswd: string }) => {
+const ip = "172.16.96.45";
+const logIn = async (email: string, pswd: string): Promise<string | null> => {
   try {
-    const response = await axios.post(
-      "http://" + ip + ":5000/auth/login/",
-      form
-    );
+    const response = await axios.post("http://" + ip + ":5000/auth/login/", {
+      email,
+      pswd,
+    });
     if (response.status === 200 || response.status === 201) {
       await asyncStorageGaleryService.storeData(
         asyncStorageGaleryService.KEYS.userToken,
         response.data.object.token
       );
-      console.log(
-        "Token guardado en AsyncStorage:",
-        response.data.object.token
-      ); // Log para verificar
-      console.log("Formulario de login:", form);
-      return true;
+
+      return response.data.object.token as string;
     }
   } catch (error) {
     console.error("Error en logIn:", error);
-    return false;
   }
+  return null;
 };
 
 const register = async (form: {

@@ -1,8 +1,8 @@
 import axios from "axios";
+import asyncStorageGaleryService from "./async-galeryStorage";
 
-const IP = "192.168.1.102";
-
-// 172.16.98.164
+const IP = "172.16.96.45";
+const API_URL = "http://172.16.96.45:5000";
 
 const getAllPictures = async (token: string | unknown) => {
   const response = await axios.get("http://" + IP + ":5000/images/get-all", {
@@ -23,12 +23,20 @@ const getAllPictures = async (token: string | unknown) => {
 };
 
 const savePicture = async (
-  token: string | unknown,
   height: number,
   width: number,
   encodedData: string | undefined
 ) => {
-  const response = await fetch("http://" + IP + ":5000/images/save", {
+  const token = await asyncStorageGaleryService.getData(
+    asyncStorageGaleryService.KEYS.userToken
+  );
+
+  if (token == null) {
+    return null;
+  }
+
+  console.log(token);
+  const response = await fetch(API_URL + "/images/save", {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -41,6 +49,8 @@ const savePicture = async (
       encodedData: encodedData,
     }),
   });
+
+  console.log(response);
 
   if (response.status == 400 || response.status == 401) {
     return null;

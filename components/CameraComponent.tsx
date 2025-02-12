@@ -24,19 +24,12 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
 
     const image = await cameraRef.current?.takePictureAsync({ base64: true });
 
-    if (image!.base64) {
-      const token = await asyncStorageGaleryService.getData(
-        asyncStorageGaleryService.KEYS.userToken
-      );
-      await cameraService.savePicture(
-        token,
-        image!.height,
-        image!.width,
-        image!.base64
-      );
-    }
     if (image != null && image.base64 != null) {
+      console.log("imagen es base 64 y entro al if del llamado al service");
+
+      await cameraService.savePicture(image.height, image.width, image.base64);
       setCapturedImage(image.base64);
+      console.log("Image saved!");
     } else {
       setCapturedImage(null);
       console.log("Error tomand la foto, null");
