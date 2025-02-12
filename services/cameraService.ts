@@ -1,11 +1,24 @@
 import axios from "axios";
 import asyncStorageGaleryService from "./async-galeryStorage";
+import { Picture } from "../types/Picture";
+import { ApiResponse } from "../types/ApiResponse";
 
 const IP = "172.16.96.45";
-const API_URL = "http://172.16.96.45:5000";
+const API_URL = "http://192.168.1.130:5000";
 
-const getAllPictures = async (token: string | unknown) => {
-  const response = await axios.get("http://" + IP + ":5000/images/get-all", {
+const getAllPictures = async (): Promise<Picture[]> => {
+  const token = await asyncStorageGaleryService.getData(
+    asyncStorageGaleryService.KEYS.userToken
+  );
+  console.log("token", token);
+
+  if (token == null) {
+    console.log("token is null");
+    return [];
+  }
+
+  const response = await fetch(API_URL + "/images/get-all", {
+    method: "GET",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -13,13 +26,14 @@ const getAllPictures = async (token: string | unknown) => {
     },
   });
 
-  const json = await response.data.object;
+  const json: ApiResponse<Picture[]> = await response.json();
+  console.log(json);
 
-  if (response.status == 409) {
-    return null;
+  if (json.statusCode == 409 || json.statusCode == 401) {
+    return [];
   }
 
-  return json;
+  return json.object;
 };
 
 const savePicture = async (
@@ -35,7 +49,6 @@ const savePicture = async (
     return null;
   }
 
-  console.log(token);
   const response = await fetch(API_URL + "/images/save", {
     method: "POST",
     headers: {
@@ -49,8 +62,6 @@ const savePicture = async (
       encodedData: encodedData,
     }),
   });
-
-  console.log(response);
 
   if (response.status == 400 || response.status == 401) {
     return null;

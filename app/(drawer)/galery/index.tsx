@@ -1,5 +1,3 @@
-// Galeria.tsx - Código FINAL y Completo
-
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
@@ -7,149 +5,152 @@ import {
   FlatList,
   Image,
   Pressable,
-  Modal,
-  Button,
   Alert,
   StyleSheet,
-  SafeAreaView,
   Dimensions,
-  ActivityIndicator,
-  TouchableOpacity,
+  Animated,
 } from "react-native";
-import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import LoadingSpinner from "../../../components/LoadingSpinner";
 import CameraComponent from "../../../components/CameraComponent";
-import { CameraView } from "expo-camera";
-
-const { width } = Dimensions.get("window");
-
-interface ImageItem {
-  encodedData: string;
-  timestamp: string;
-}
+import PictureService from "../../../services/cameraService";
+import { Picture } from "../../../types/Picture";
 
 const Galeria = () => {
-  const [images, setImages] = useState<string[]>([]);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const [images, setImages] = useState<Picture[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const cameraRef = useRef<CameraView | null>(null);
-
-  const loadImages = useCallback(async () => {
-    setLoading(true);
-    try {
-      const localImages: string[] = [];
-      const keys = await AsyncStorage.getAllKeys();
-      const imageKeys = keys.filter((key) => key.startsWith("localImage_"));
-
-      if (imageKeys.length > 0) {
-        const storedImages = await AsyncStorage.multiGet(imageKeys);
-        storedImages.forEach(([_key, base64Data]) => {
-          if (base64Data) {
-            localImages.push(base64Data);
-          }
-        });
-      }
-      setImages(localImages);
-    } catch (error) {
-      console.error("Error loading local images:", error);
-      Alert.alert("Error", "Failed to load images from local storage.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    loadImages();
-  }, [loadImages]);
+    const loadImages = async () => {
+      setLoading(true);
+      try {
+        const allImages = await PictureService.getAllPictures();
 
+        if (Array.isArray(allImages)) {
+          setImages(allImages);
+          console.log("Imágenes cargadas correctamente:", allImages.length);
+        } else {
+          console.error("Datos de imágenes inválidos:", allImages);
+          setImages([]);
+          Alert.alert(
+            "Error",
+            "No se pudieron cargar las imágenes correctamente."
+          );
+        }
+      } catch (error) {
+        console.error("Error al cargar imágenes:", error);
+        setImages([]);
+        Alert.alert("Error", "Error al cargar las imágenes del servidor.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadImages();
+  }, []);
+
+  const openImage = (image: Picture) => {
+    console.log("Image opened");
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
   const handleImageCaptured = useCallback(async (base64Image: string) => {
     try {
       const timestamp = Date.now();
-      await AsyncStorage.setItem(`localImage_${timestamp}`, base64Image);
-      setImages((prevImages) => [...prevImages, base64Image]);
+      const newImage: Picture = {
+        id: timestamp,
+        height: 0,
+        width: 0,
+        encondedData: base64Image,
+      };
+
+      const savedImage = await PictureService.savePicture(
+        newImage.height,
+        newImage.width,
+        base64Image
+      );
+
+      if (savedImage) {
+        setImages((prevImages) => [...prevImages, newImage]);
+      } else {
+        throw new Error("No se pudo guardar la imagen en el servidor");
+      }
+
       setShowCamera(false);
     } catch (error) {
-      console.error("Error saving image locally:", error);
-      Alert.alert("Error", "Failed to save image locally.");
+      console.error("Error al guardar la imagen:", error);
+      Alert.alert("Error", "No se pudo guardar la imagen.");
     }
   }, []);
 
-  const handleDeleteImage = async (base64ImageToDelete: string) => {
-    Alert.alert(
-      "Eliminar imagen",
-      "¿Estás seguro de que quieres eliminar esta imagen?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const keys = await AsyncStorage.getAllKeys();
-              for (const key of keys) {
-                if (key.startsWith("localImage_")) {
-                  const storedImage = await AsyncStorage.getItem(key);
-                  if (storedImage === base64ImageToDelete) {
-                    await AsyncStorage.removeItem(key);
-                    break;
-                  }
-                }
-              }
-              setImages((prev) =>
-                prev.filter((img) => img !== base64ImageToDelete)
-              );
-            } catch (error) {
-              console.error("Error deleting image:", error);
-              Alert.alert("Error", "Failed to delete image.");
-            } finally {
-              setLoading(false);
-              setSelectedImage(null);
-            }
-          },
-          style: "destructive",
-        },
-      ]
-    );
-  };
-
   return (
-    <>
+    <View style={styles.container}>
       <Pressable
         style={styles.openCameraButton}
         onPress={() => setShowCamera(true)}
       >
         <Text style={styles.openCameraButtonText}>Abrir cámara</Text>
       </Pressable>
+
       {showCamera ? (
         <CameraComponent
           onCapture={handleImageCaptured}
           onClose={() => setShowCamera(false)}
         />
       ) : (
-        <View>
-          <Text>Nada para mostrar</Text>
+        <View style={styles.galleryContainer}>
+          {loading ? (
+            <Text style={styles.statusText}>Cargando imágenes...</Text>
+          ) : images.length === 0 ? (
+            <Text style={styles.statusText}>No hay imágenes para mostrar</Text>
+          ) : (
+            <>
+              <Text style={styles.title}>Imágenes:</Text>
+              <FlatList
+                data={images}
+                keyExtractor={(item) => item.id.toString()}
+                horizontal
+                renderItem={({ item }) => (
+                  <Pressable onPress={() => openImage(item)}>
+                    <Image
+                      source={{
+                        uri: `data:image/jpg;base64,${item.encondedData}`,
+                      }}
+                      style={styles.thumbnail}
+                    />
+                  </Pressable>
+                )}
+              />
+            </>
+          )}
         </View>
       )}
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: 20,
-    backgroundColor: "blue",
+  },
+  galleryContainer: {
+    flex: 1,
   },
   title: {
     fontSize: 20,
     textAlign: "center",
     marginBottom: 10,
   },
-  image: {
-    width: Dimensions.get("window").width / 3 - 10,
-    height: Dimensions.get("window").width / 3 - 10,
+  thumbnail: {
+    width: 100,
+    height: 100,
     margin: 5,
+    borderRadius: 8,
   },
   openCameraButton: {
     backgroundColor: "#007BFF",
@@ -162,34 +163,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
   },
-  modalOverlay: {
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalImage: {
-    // width: "100%",
-    // height: "80%",
-    resizeMode: "contain",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    marginTop: 20,
-  },
-  cameraComponentContainer: {
-    flex: 1,
-    flexGrow: 1,
-    height: "100%",
-
-    backgroundColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  noImagesText: {
+  statusText: {
     fontSize: 18,
     textAlign: "center",
     marginTop: 20,

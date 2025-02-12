@@ -20,8 +20,6 @@ export const TodoPage = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>(productArray);
 
-  // aqui un useEffect que revise que no haya null en los tokens
-
   const handleAddProduct = (newProduct: Product) => {
     if (isEditMode && selectedProduct) {
       setProducts((prevProducts) =>

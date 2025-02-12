@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
-import { View, Pressable, StyleSheet, Text, Alert, Image } from "react-native";
+import { View, Pressable, StyleSheet, Text, Button, Image } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import cameraService from "../services/cameraService";
 import asyncStorageGaleryService from "../services/async-galeryStorage";
+import { router } from "expo-router";
 
 type CameraComponentProps = {
   onCapture: (base64Image: string) => void;
@@ -28,6 +29,7 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
       console.log("imagen es base 64 y entro al if del llamado al service");
 
       await cameraService.savePicture(image.height, image.width, image.base64);
+      router.navigate("../galery");
       setCapturedImage(image.base64);
       console.log("Image saved!");
     } else {
@@ -41,10 +43,10 @@ const CameraComponent: React.FC<CameraComponentProps> = ({
   };
 
   if (!permission) {
+    return <View />;
+  } else if (!permission.granted) {
     return (
-      <View>
-        <Text>Cargando permisos...</Text>
-      </View>
+      <Button onPress={requestPermission} title="Dar permisos de cámara" />
     );
   } else if (!permission.granted) {
     return (

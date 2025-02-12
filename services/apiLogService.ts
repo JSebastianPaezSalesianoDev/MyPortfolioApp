@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import asyncStorageGaleryService from "./async-galeryStorage";
 import axios from "axios";
 
-const ip = "172.16.96.45";
+const ip = "192.168.1.130";
 const logIn = async (email: string, pswd: string): Promise<string | null> => {
   try {
     const response = await axios.post("http://" + ip + ":5000/auth/login/", {
